@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora con Árbol</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <!-- Calculadora -->
+            <div class="col-md-4 offset-md-2">
+                <div class="calculator">
+                    <div class="screen">
+                        <input type="text" id="expression" class="form-control text-end" placeholder="0" readonly>
+                    </div>
+                    <div class="buttons">
+                        <button class="btn btn-secondary">(</button>
+                        <button class="btn btn-secondary">)</button>
+                        <button class="btn btn-danger">C</button>
+                        <button class="btn btn-secondary">/</button>
+                        <button class="btn btn-dark">7</button>
+                        <button class="btn btn-dark">8</button>
+                        <button class="btn btn-dark">9</button>
+                        <button class="btn btn-secondary">*</button>
+                        <button class="btn btn-dark">4</button>
+                        <button class="btn btn-dark">5</button>
+                        <button class="btn btn-dark">6</button>
+                        <button class="btn btn-secondary">-</button>
+                        <button class="btn btn-dark">1</button>
+                        <button class="btn btn-dark">2</button>
+                        <button class="btn btn-dark">3</button>
+                        <button class="btn btn-secondary">+</button>
+                        <button class="btn btn-dark">0</button>
+                        <button class="btn btn-dark">.</button>
+                        <button id="calculate" class="btn btn-warning">=</button>
+                        <button id="tree" class="btn btn-success">Tree</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Árbol de derivación -->
+            <div class="col-md-4">
+                <h3 class="text-center">Árbol:</h3>
+                <div id="tree-container" class="tree-container">
+                    <img src="" id="treeImage" class="img-fluid" alt="Árbol de derivación">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Controlar botones
+        const buttons = document.querySelectorAll(".buttons .btn");
+        const expressionInput = document.getElementById("expression");
+        const calculateButton = document.getElementById("calculate");
+        const treeButton = document.getElementById("tree");
+        const treeImage = document.getElementById("treeImage");
+
+        buttons.forEach(button => {
+            button.addEventListener("click", () => {
+                const value = button.innerText;
+                if (value === "C") {
+                    expressionInput.value = "";
+                    treeImage.src = "";  // Limpiar la imagen del árbol
+                } else if (value !== "=" && value !== "Tree") {
+                    expressionInput.value += value;
+                }
+            });
+        });
+
+        // Función para manejar errores de la API
+        function handleApiError(response) {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Error en la operación');
+                });
+            }
+            return response.json();
+        }
+
+        // Calcular resultado
+        calculateButton.addEventListener("click", () => {
+            const expression = expressionInput.value;
+            if (!expression) return;
+
+            fetch("/calculate", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `expression=${encodeURIComponent(expression)}`
+            })
+            .then(handleApiError)
+            .then(data => {
+                expressionInput.value = data.result;
+                if (data.tree) {
+                    treeImage.src = data.tree + "?t=" + new Date().getTime();
+                }
+            })
+            .catch(error => {
+                alert(error.message);
+            });
+        });
+
+        // Generar árbol
+        treeButton.addEventListener("click", () => {
+            const expression = expressionInput.value;
+            if (!expression) return;
+
+            fetch("/calculate", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `expression=${encodeURIComponent(expression)}`
+            })
+            .then(handleApiError)
+            .then(data => {
+                if (data.tree) {
+                    treeImage.src = data.tree + "?t=" + new Date().getTime();
+                }
+            })
+            .catch(error => {
+                alert(error.message);
+            });
+        });
+    </script>
+</body>
+</html>
